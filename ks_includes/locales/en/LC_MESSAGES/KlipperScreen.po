@@ -752,3 +752,8 @@ msgstr ""
 
 msgid "mm³/s"
 msgstr ""
+
+# message for when SCREWS_TILT_ADJUST is close to reference
+# TODO: Should this be phrased differently?  "Success", "Acceptable", "Close enough for a smooth brain like yourself", etc.?
+msgid "Level"
+msgstr ""

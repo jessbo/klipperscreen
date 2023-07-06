@@ -350,7 +350,7 @@ class BedLevelPanel(ScreenPanel):
             self.buttons['screws'].set_sensitive(True)
             return
         result = re.match(
-            "^// (.*) : [xX= ]+([\\-0-9\\.]+), [yY= ]+([\\-0-9\\.]+), [zZ= ]+[\\-0-9\\.]+ :" +
+            "^// (.*) : [xX= ]+([\\-0-9\\.]+), [yY= ]+([\\-0-9\\.]+), [zZ= ]+([\\-0-9\\.]+) :" +
             " (Adjust ->|adjust) ([CW]+ [0-9:]+)",
             data
         )
@@ -359,17 +359,29 @@ class BedLevelPanel(ScreenPanel):
         if result:
             x = round(float(result[2]) + self.x_offset, 1)
             y = round(float(result[3]) + self.y_offset, 1)
+            z = float(result[4])
             for key, value in self.screw_dict.items():
                 if value and x == value[0] and y == value[1]:
-                    logging.debug(f"X: {x} Y: {y} Adjust: {result[5]} Pos: {key}")
-                    self.buttons[key].set_label(result[5])
+                    logging.debug(f"X: {x} Y: {y} Z: {z} Adjust: {result[6]} Pos: {key}")
+                    comment = result[6]
+                    logging.debug(f"{comment=}")
+                    # Replace CW/CCW with unicode symbol
+                    comment = comment.replace("CCW", "↺")
+                    comment = comment.replace("CW", "↻")
+                    # Print when effectively level (instead of "CC?W 0:00")
+                    if comment.endswith("00:00"):
+                        comment = _("Level")
+                    # TODO: Would like to use Gtk.Label.set_markup() here and
+                    #       use italics, but not sure how to access existing
+                    #       Gtk.Button's Label.
+                    self.buttons[key].set_label(f"Z: {z}\n{comment}")
                     break
             self.response_count += 1
             if self.response_count >= len(self.screws) - 1:
                 self.buttons['screws'].set_sensitive(True)
         else:
             result = re.match(
-                "^// (.*) : [xX= ]+([\\-0-9\\.]+), [yY= ]+([\\-0-9\\.]+), [zZ= ]+[\\-0-9\\.]",
+                "^// (.*) : [xX= ]+([\\-0-9\\.]+), [yY= ]+([\\-0-9\\.]+), [zZ= ]+([\\-0-9\\.]+)",
                 data
             )
             # screws_tilt_adjust uses PROBE positions and was offseted for the buttons to work equal to bed_screws
@@ -377,11 +389,12 @@ class BedLevelPanel(ScreenPanel):
             if result and re.search('base', result[1]):
                 x = round(float(result[2]) + self.x_offset, 1)
                 y = round(float(result[3]) + self.y_offset, 1)
-                logging.debug(f"X: {x} Y: {y} is the reference")
+                z = float(result[4])
+                logging.debug(f"X: {x} Y: {y} Z: {z} is the reference")
                 for key, value in self.screw_dict.items():
                     if value and x == value[0] and y == value[1]:
                         logging.debug(f"X: {x} Y: {y} Pos: {key}")
-                        self.buttons[key].set_label(_("Reference"))
+                        self.buttons[key].set_label(f"Z: {z}\n{_('Reference')}")
 
     def _get_screws(self, config_section_name):
         screws = []
